@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 
-# Importar o router que criámos na pasta routers
 from routers import ator_router
+from routers import demanda_router
 
-# Criar a instância principal da aplicação FastAPI
 app = FastAPI(
     title="Portal da Governança - Fundo Patrimonial",
     description="API para o ecossistema de inovação da Tríplice Hélice",
@@ -11,6 +10,7 @@ app = FastAPI(
 )
 
 app.include_router(ator_router.router)
+app.include_router(demanda_router.router)
 
 @app.get("/")
 def read_root():
