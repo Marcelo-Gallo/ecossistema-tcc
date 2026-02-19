@@ -1,1 +1,36 @@
-/venv
+# =========================
+# Ambientes Virtuais Python
+# =========================
+venv/
+env/
+.venv/
+
+# =========================
+# Dependências Frontend
+# =========================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# =========================
+# Arquivos Compilados e Cache
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+build/
+dist/
+
+# =========================
+# Variáveis de Ambiente e OS
+# =========================
+.env
+.env.*
+.DS_Store
+
+# =========================
+# Pastas de IDEs (VSCode, etc)
+# =========================
+.vscode/
+.idea/
