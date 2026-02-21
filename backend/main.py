@@ -6,6 +6,7 @@ from routers import expertise_router
 from routers import portfolio_router
 from routers import edital_router
 from routers import projeto_router
+from routers import membro_router
 
 app = FastAPI(
     title="Portal da Governança - Fundo Patrimonial",
@@ -19,6 +20,7 @@ app.include_router(expertise_router.router)
 app.include_router(portfolio_router.router)
 app.include_router(edital_router.router)
 app.include_router(projeto_router.router)
+app.include_router(membro_router.router)
 
 @app.get("/")
 def read_root():
