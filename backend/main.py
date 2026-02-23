@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from routers import ator_router
 from routers import demanda_router
@@ -8,11 +9,20 @@ from routers import edital_router
 from routers import projeto_router
 from routers import membro_router
 from routers import pagamento_router
+from routers import matchmaking_router
 
 app = FastAPI(
     title="Portal da Governança - Fundo Patrimonial",
     description="API para o ecossistema de inovação da Tríplice Hélice",
     version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(ator_router.router)
@@ -23,6 +33,7 @@ app.include_router(edital_router.router)
 app.include_router(projeto_router.router)
 app.include_router(membro_router.router)
 app.include_router(pagamento_router.router)
+app.include_router(matchmaking_router.router)
 
 
 @app.get("/")

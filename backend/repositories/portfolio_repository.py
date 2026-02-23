@@ -46,3 +46,11 @@ class PortfolioRepository:
             portfolio_deletado = cursor.fetchone()
             self.conn.commit()
             return portfolio_deletado
+        
+    def get_by_expertise_id(self, expertise_id: int):
+        with self.conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM portfolio_expertise WHERE expertise_id = %s AND deletado_em IS NULL;", 
+                (expertise_id,)
+            )
+            return cursor.fetchall()

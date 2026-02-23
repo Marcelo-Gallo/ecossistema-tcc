@@ -46,3 +46,11 @@ class ExpertiseRepository:
             expertise_deletada = cursor.fetchone()
             self.conn.commit()
             return expertise_deletada
+        
+    def get_by_area_cnpq(self, area_cnpq: str):
+        with self.conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM expertise WHERE area_cnpq = %s AND deletado_em IS NULL;", 
+                (area_cnpq,)
+            )
+            return cursor.fetchall()
