@@ -16,7 +16,7 @@ class MatchmakingService:
         if not demanda:
             raise HTTPException(status_code=404, detail="Demanda não encontrada.")
 
-        # Filtro Absoluto: Mesma área do CNPq
+        # Filtro Absoluto 1: Mesma área do CNPq
         expertises_candidatas = self.expertise_repo.get_by_area_cnpq(demanda['area_cnpq'])
         
         if not expertises_candidatas:
@@ -34,8 +34,6 @@ class MatchmakingService:
                 texto_exp += f" {item['titulo']}"
                 
             # Score de Similaridade Textual (TF-IDF + Cosine Similarity)
-            # TF-IDF => Term Frequency - Inverse Document Frequency, que é uma técnica estatistica da ciencia de dados e processamento de linguagem natural usada para avaliar a relevância de uma palavra em um documento em relação a uma coleção inteira de documentos.
-            # Vetoriza os textos para comparar o quão próximos eles são no espaço multidimensional
             vectorizer = TfidfVectorizer(stop_words=['o', 'a', 'de', 'para', 'com', 'em', 'um', 'uma']) # Stop words básicas
             
             try:
@@ -46,6 +44,12 @@ class MatchmakingService:
                 # Ocorre se os textos forem vazios ou só tiverem stop words
                 score_texto = 0.0
 
+            # FILTRO ABSOLUTO 2: Corte Semântico (Hard Filter)
+            # Exige um mínimo de 5% de aderência textual com a demanda. 
+            # Sem isso, a autoridade não pode justificar o financiamento.
+            if score_texto < 5.0:
+                continue
+
             # Score de Autoridade (Máximo de 100)
             # Considera-se que cada publicação soma 20 pontos de autoridade
             score_autoridade = min(len(portfolio) * 20, 100)
@@ -53,7 +57,7 @@ class MatchmakingService:
             # Equação Final (Pesos: 70% Texto, 30% Autoridade)
             score_total = (0.7 * score_texto) + (0.3 * score_autoridade)
             
-            # Filtro de relevância mínima (ex: score total > 10)
+            # Filtro de relevância mínima final (ex: score total > 10)
             if score_total > 10:
                 resultados.append({
                     "expertise_id": exp['id'],
