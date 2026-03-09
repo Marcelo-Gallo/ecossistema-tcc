@@ -10,6 +10,7 @@ const PainelTransparencia = () => {
   const [demandas, setDemandas] = useState([]);
   const [projetosConcluidos, setProjetosConcluidos] = useState([]);
   const [aportes, setAportes] = useState([]);
+  const [editaisLista, setEditaisLista] = useState([]); 
   const [loading, setLoading] = useState(true);
 
   const [modalAtivo, setModalAtivo] = useState(null); 
@@ -20,12 +21,13 @@ const PainelTransparencia = () => {
   useEffect(() => {
     const carregarDadosGovernanca = async () => {
       try {
-        const [resProjetos, resDemandas, resAcervo, resAportes, resKpis] = await Promise.all([
+        const [resProjetos, resDemandas, resAcervo, resAportes, resKpis, resEditais] = await Promise.all([
           fetch('http://localhost:8000/api/projetos/'),
           fetch('http://localhost:8000/api/demandas/'),
           fetch('http://localhost:8000/api/transparencia/projetos-concluidos'),
           fetch('http://localhost:8000/api/transparencia/aportes'),
-          fetch('http://localhost:8000/api/transparencia/kpis') // A FONTE DA VERDADE
+          fetch('http://localhost:8000/api/transparencia/kpis'),
+          fetch('http://localhost:8000/api/editais/') 
         ]);
 
         const dataProjetos = await resProjetos.json();
@@ -35,7 +37,8 @@ const PainelTransparencia = () => {
         setProjetosAtivos(dataProjetos.filter(p => p.status !== 'CONCLUIDO'));
         setProjetosConcluidos(await resAcervo.json());
         setAportes(await resAportes.json());
-        setKpis(await resKpis.json()); // Backend entrega pronto!
+        setKpis(await resKpis.json());
+        setEditaisLista(await resEditais.json());
 
         const contagemAreas = dataDemandas.reduce((acc, demanda) => {
           acc[demanda.area_cnpq] = (acc[demanda.area_cnpq] || 0) + 1;
@@ -71,7 +74,6 @@ const PainelTransparencia = () => {
         <p style={styles.subtitle}>Auditoria pública do Corpus e acompanhamento das políticas de fomento sustentadas pelos rendimentos.</p>
       </header>
 
-      {/* A HISTÓRIA DA GOVERNANÇA: Rendimento vs Empenho */}
       <div style={styles.gridKpi}>
         <div style={styles.cardKpi}>
           <div style={{...styles.iconContainer, backgroundColor: '#e8f5e9'}}><Shield size={24} color="#388e3c" /></div>
@@ -83,10 +85,11 @@ const PainelTransparencia = () => {
           </div>
         </div>
 
-        <div style={styles.cardKpi}>
+        {/* EDITAIS CLICÁVEIS */}
+        <div style={{...styles.cardKpi, cursor: 'pointer'}} onClick={() => abrirModalDetalhe('editais')}>
           <div style={{...styles.iconContainer, backgroundColor: '#fff3e0'}}><Wallet size={24} color="#f57c00" /></div>
           <div>
-            <p style={styles.kpiLabel}>Empenhado em Editais</p>
+            <p style={styles.kpiLabel}>Empenhado em Editais (Ver Detalhes)</p>
             <h3 style={{...styles.kpiValue, color: '#f57c00'}}>
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis.orcamento_empenhado)}
             </h3>
@@ -103,7 +106,6 @@ const PainelTransparencia = () => {
       </div>
 
       <div style={styles.gridGraficos}>
-        {/* Tabela de Blindagem do Corpus */}
         <div style={{...styles.cardGrafico, gridColumn: '1 / -1'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
             <div>
@@ -139,7 +141,6 @@ const PainelTransparencia = () => {
           </table>
         </div>
 
-        {/* Gráfico de Demandas */}
         <div style={styles.cardGrafico}>
           <h4 style={styles.graficoTitle}>Distribuição de Demandas (CNPq)</h4>
           {dadosAreas.length > 0 ? (
@@ -157,7 +158,6 @@ const PainelTransparencia = () => {
           ) : <p style={styles.emptyState}>Sem demandas mapeadas.</p>}
         </div>
 
-        {/* Acervo Municipal */}
         <div style={styles.cardGrafico}>
           <h4 style={styles.graficoTitle}>Acervo Municipal (Impacto Gerado)</h4>
           <p style={{fontSize: '13px', color: '#666', marginBottom: '15px'}}>Soluções já devolvidas à sociedade. Clique para auditar.</p>
@@ -177,7 +177,7 @@ const PainelTransparencia = () => {
         </div>
       </div>
 
-      {/* MODAIS (Inalterado, apenas feche as tags) */}
+      {/* SISTEMA DE MODAIS */}
       {modalAtivo && (
         <div style={styles.modalOverlay} onClick={() => setModalAtivo(null)}>
           <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -185,12 +185,28 @@ const PainelTransparencia = () => {
               <h3 style={{margin: 0}}>
                 {modalAtivo === 'demandas' && 'Demandas da Tríplice Hélice'}
                 {modalAtivo === 'projetos' && 'Projetos de Inovação Ativos'}
+                {modalAtivo === 'editais' && 'Auditoria de Editais Públicos'}
                 {modalAtivo === 'acervo_detalhe' && 'Auditoria de Impacto e Gastos'}
               </h3>
               <button style={styles.closeBtn} onClick={() => setModalAtivo(null)}><X size={20}/></button>
             </div>
             
             <div style={styles.modalBody}>
+              {modalAtivo === 'editais' && (
+                <ul style={styles.list}>
+                  {editaisLista.map(edital => (
+                    <li key={edital.id} style={styles.listItem}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <strong>{edital.codigo_identificacao}</strong>
+                        <strong style={{color: '#f57c00'}}>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(edital.orcamento_disponivel)}</strong>
+                      </div>
+                      <span style={{fontSize: '13px', color: '#666'}}>Abertura: {edital.data_abertura} | Fechamento: {edital.data_fechamento}</span><br/>
+                    </li>
+                  ))}
+                  {editaisLista.length === 0 && <p>Nenhum edital publicado.</p>}
+                </ul>
+              )}
+
               {modalAtivo === 'demandas' && (
                 <ul style={styles.list}>
                   {demandas.map(d => (
