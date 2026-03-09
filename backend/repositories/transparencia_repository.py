@@ -24,3 +24,24 @@ class TransparenciaRepository:
         with self.conn.cursor() as cursor:
             cursor.execute(query)
             return cursor.fetchall()
+
+    def get_kpis_data(self):
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT COALESCE(SUM(valor), 0) as corpus FROM aporte;")
+            corpus = cursor.fetchone()['corpus']
+            
+            cursor.execute("SELECT COALESCE(SUM(orcamento_disponivel), 0) as empenhado FROM edital;")
+            empenhado = cursor.fetchone()['empenhado']
+            
+            cursor.execute("SELECT COUNT(*) as projetos FROM projeto_inovacao WHERE status != 'CONCLUIDO';")
+            projetos = cursor.fetchone()['projetos']
+            
+            cursor.execute("SELECT COUNT(*) as demandas FROM demanda;")
+            demandas = cursor.fetchone()['demandas']
+            
+            return {
+                "corpus_total": float(corpus),
+                "orcamento_empenhado": float(empenhado),
+                "projetos_ativos": int(projetos),
+                "demandas_mapeadas": int(demandas)
+            }

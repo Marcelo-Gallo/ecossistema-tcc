@@ -10,3 +10,8 @@ class TransparenciaService:
         
     def obter_ultimos_aportes(self):
         return self.repo.get_ultimos_aportes()
+
+    def obter_kpis_governanca(self):
+        dados = self.repo.get_kpis_data()
+        dados['teto_rendimento'] = dados['corpus_total'] * 0.008  # Regra dos Rendimentos
+        return dados

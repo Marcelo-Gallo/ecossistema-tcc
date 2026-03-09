@@ -153,8 +153,9 @@ const PainelCadastro = () => {
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <Landmark size={22} color="#0891b2" />
-            <h3 style={styles.cardTitle}>5. Novo Edital (Fundo)</h3>
+            <h3 style={styles.cardTitle}>5. Empenhar Verba (Novo Edital)</h3>
           </div>
+          <p style={{fontSize: '12px', color: '#666', marginBottom: '15px'}}>Para financiar um projeto, você deve primeiro "empacotar" parte do teto de rendimentos em um Edital público.</p>
           <form onSubmit={e => submitGenerico(e, 'http://localhost:8000/api/editais/', { ...editalForm, orcamento_disponivel: parseFloat(editalForm.orcamento_disponivel) }, () => setEditalForm({ codigo_identificacao: '', orcamento_disponivel: '', data_abertura: '', data_fechamento: '' }))} style={styles.form}>
             <input required style={styles.input} placeholder="Código do Edital (Ex: ED-001/2026)" value={editalForm.codigo_identificacao} onChange={e => setEditalForm({ ...editalForm, codigo_identificacao: e.target.value })} />
             <input required type="number" step="0.01" style={styles.input} placeholder="Orçamento Disponível (R$)" value={editalForm.orcamento_disponivel} onChange={e => setEditalForm({ ...editalForm, orcamento_disponivel: e.target.value })} />
@@ -201,7 +202,6 @@ const PainelCadastro = () => {
           </form>
         </div>
 
-        {/* NOVO CARD: GESTÃO AO VIVO PARA A BANCA */}
         <div style={{...styles.card, gridColumn: '1 / -1', border: '2px dashed #2563eb'}}>
           <div style={styles.cardHeader}>
             <CheckCircle2 size={22} color="#2563eb" />

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 
 class ProjetoConcluidoResponse(BaseModel):
     id: int
@@ -13,3 +13,10 @@ class AporteTransparenciaResponse(BaseModel):
     doador_nome: str
     valor: float
     data_aporte: str
+
+class TransparenciaKPIsResponse(BaseModel):
+    corpus_total: float
+    teto_rendimento: float
+    orcamento_empenhado: float
+    projetos_ativos: int
+    demandas_mapeadas: int

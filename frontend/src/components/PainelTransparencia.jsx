@@ -3,17 +3,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, L
 import { Wallet, Target, BookOpen, Award, Shield, X } from 'lucide-react';
 
 const PainelTransparencia = () => {
-  const [kpis, setKpis] = useState({ orcamentoTotal: 0 });
+  const [kpis, setKpis] = useState({ corpus_total: 0, teto_rendimento: 0, orcamento_empenhado: 0, projetos_ativos: 0, demandas_mapeadas: 0 });
   const [dadosAreas, setDadosAreas] = useState([]);
   
-  // Listas de dados reais vindas da API
   const [projetosAtivos, setProjetosAtivos] = useState([]);
   const [demandas, setDemandas] = useState([]);
   const [projetosConcluidos, setProjetosConcluidos] = useState([]);
   const [aportes, setAportes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Controle dos Modais
   const [modalAtivo, setModalAtivo] = useState(null); 
   const [itemSelecionado, setItemSelecionado] = useState(null);
 
@@ -22,28 +20,22 @@ const PainelTransparencia = () => {
   useEffect(() => {
     const carregarDadosGovernanca = async () => {
       try {
-        const [resProjetos, resDemandas, resAcervo, resAportes] = await Promise.all([
+        const [resProjetos, resDemandas, resAcervo, resAportes, resKpis] = await Promise.all([
           fetch('http://localhost:8000/api/projetos/'),
           fetch('http://localhost:8000/api/demandas/'),
           fetch('http://localhost:8000/api/transparencia/projetos-concluidos'),
-          fetch('http://localhost:8000/api/transparencia/aportes')
+          fetch('http://localhost:8000/api/transparencia/aportes'),
+          fetch('http://localhost:8000/api/transparencia/kpis') // A FONTE DA VERDADE
         ]);
 
         const dataProjetos = await resProjetos.json();
         const dataDemandas = await resDemandas.json();
-        const dataAcervo = await resAcervo.json();
-        const dataAportes = await resAportes.json();
-
-        // CÁLCULO DINÂMICO DOS RENDIMENTOS (0.8% DO CORPUS)
-        const corpusTotal = dataAportes.reduce((acc, aporte) => acc + parseFloat(aporte.valor), 0);
-        const rendimentoDisponivel = corpusTotal * 0.008; 
-        
-        setKpis({ orcamentoTotal: rendimentoDisponivel });
         
         setDemandas(dataDemandas);
         setProjetosAtivos(dataProjetos.filter(p => p.status !== 'CONCLUIDO'));
-        setProjetosConcluidos(dataAcervo);
-        setAportes(dataAportes);
+        setProjetosConcluidos(await resAcervo.json());
+        setAportes(await resAportes.json());
+        setKpis(await resKpis.json()); // Backend entrega pronto!
 
         const contagemAreas = dataDemandas.reduce((acc, demanda) => {
           acc[demanda.area_cnpq] = (acc[demanda.area_cnpq] || 0) + 1;
@@ -79,40 +71,50 @@ const PainelTransparencia = () => {
         <p style={styles.subtitle}>Auditoria pública do Corpus e acompanhamento das políticas de fomento sustentadas pelos rendimentos.</p>
       </header>
 
-      {/* KPIs Clicáveis */}
+      {/* A HISTÓRIA DA GOVERNANÇA: Rendimento vs Empenho */}
       <div style={styles.gridKpi}>
         <div style={styles.cardKpi}>
-          <div style={styles.iconContainer}><Wallet size={24} color="#1976d2" /></div>
+          <div style={{...styles.iconContainer, backgroundColor: '#e8f5e9'}}><Shield size={24} color="#388e3c" /></div>
           <div>
-            <p style={styles.kpiLabel}>Rendimentos Liberados (0.8% a.m.)</p>
-            <h3 style={styles.kpiValue}>
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis.orcamentoTotal)}
+            <p style={styles.kpiLabel}>Teto de Rendimento (0.8%)</p>
+            <h3 style={{...styles.kpiValue, color: '#388e3c'}}>
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis.teto_rendimento)}
+            </h3>
+          </div>
+        </div>
+
+        <div style={styles.cardKpi}>
+          <div style={{...styles.iconContainer, backgroundColor: '#fff3e0'}}><Wallet size={24} color="#f57c00" /></div>
+          <div>
+            <p style={styles.kpiLabel}>Empenhado em Editais</p>
+            <h3 style={{...styles.kpiValue, color: '#f57c00'}}>
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis.orcamento_empenhado)}
             </h3>
           </div>
         </div>
 
         <div style={{...styles.cardKpi, cursor: 'pointer'}} onClick={() => abrirModalDetalhe('projetos')}>
-          <div style={styles.iconContainer}><Target size={24} color="#388e3c" /></div>
+          <div style={{...styles.iconContainer, backgroundColor: '#e3f2fd'}}><Target size={24} color="#1976d2" /></div>
           <div>
             <p style={styles.kpiLabel}>Projetos Ativos (Ver Lista)</p>
-            <h3 style={styles.kpiValue}>{projetosAtivos.length}</h3>
-          </div>
-        </div>
-
-        <div style={{...styles.cardKpi, cursor: 'pointer'}} onClick={() => abrirModalDetalhe('demandas')}>
-          <div style={styles.iconContainer}><BookOpen size={24} color="#f57c00" /></div>
-          <div>
-            <p style={styles.kpiLabel}>Demandas Mapeadas (Ver Lista)</p>
-            <h3 style={styles.kpiValue}>{demandas.length}</h3>
+            <h3 style={{...styles.kpiValue, color: '#1976d2'}}>{kpis.projetos_ativos}</h3>
           </div>
         </div>
       </div>
 
       <div style={styles.gridGraficos}>
-        {/* Tabela de Blindagem do Corpus (Rastro do Dinheiro) */}
+        {/* Tabela de Blindagem do Corpus */}
         <div style={{...styles.cardGrafico, gridColumn: '1 / -1'}}>
-          <h4 style={styles.graficoTitle}><Shield size={18} style={{marginRight: '8px', verticalAlign: 'middle', color: '#1976d2'}}/> Blindagem do Corpus (Últimos Aportes)</h4>
-          <p style={{fontSize: '13px', color: '#666', marginBottom: '15px'}}>Registro imutável das injeções de capital. Este montante não é consumido, sendo garantidor da perenidade do Fundo.</p>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+            <div>
+              <h4 style={styles.graficoTitle}><Shield size={18} style={{marginRight: '8px', verticalAlign: 'middle', color: '#1976d2'}}/> Blindagem do Corpus (Últimos Aportes)</h4>
+              <p style={{fontSize: '13px', color: '#666', margin: 0}}>O capital base que gera os rendimentos. Este montante nunca é consumido.</p>
+            </div>
+            <div style={{textAlign: 'right'}}>
+              <p style={{fontSize: '12px', color: '#666', margin: 0, textTransform: 'uppercase', fontWeight: 'bold'}}>Corpus Total Auditado</p>
+              <h3 style={{margin: 0, color: '#1976d2', fontSize: '20px'}}>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis.corpus_total)}</h3>
+            </div>
+          </div>
           
           <table style={styles.table}>
             <thead>
@@ -155,7 +157,7 @@ const PainelTransparencia = () => {
           ) : <p style={styles.emptyState}>Sem demandas mapeadas.</p>}
         </div>
 
-        {/* Acervo Municipal Clicável */}
+        {/* Acervo Municipal */}
         <div style={styles.cardGrafico}>
           <h4 style={styles.graficoTitle}>Acervo Municipal (Impacto Gerado)</h4>
           <p style={{fontSize: '13px', color: '#666', marginBottom: '15px'}}>Soluções já devolvidas à sociedade. Clique para auditar.</p>
@@ -175,7 +177,7 @@ const PainelTransparencia = () => {
         </div>
       </div>
 
-      {/* MODAL SYSTEM */}
+      {/* MODAIS (Inalterado, apenas feche as tags) */}
       {modalAtivo && (
         <div style={styles.modalOverlay} onClick={() => setModalAtivo(null)}>
           <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -198,7 +200,6 @@ const PainelTransparencia = () => {
                       <span style={styles.badgeArea}>{d.area_cnpq}</span>
                     </li>
                   ))}
-                  {demandas.length === 0 && <p>Nenhuma demanda cadastrada.</p>}
                 </ul>
               )}
 
@@ -210,26 +211,25 @@ const PainelTransparencia = () => {
                       <span style={{fontSize: '13px', color: '#666'}}>Status Público: <strong style={{color: '#f57c00'}}>{p.status}</strong></span>
                     </li>
                   ))}
-                  {projetosAtivos.length === 0 && <p>Nenhum projeto ativo.</p>}
                 </ul>
               )}
 
               {modalAtivo === 'acervo_detalhe' && itemSelecionado && (
                 <div>
                   <h4 style={{marginTop: 0, color: '#1976d2'}}>{itemSelecionado.titulo}</h4>
-                  <p><strong>Demanda Originária (ID):</strong> #{itemSelecionado.demanda_id} (Governo/Indústria)</p>
-                  <p><strong>Expertise Vinculada (ID):</strong> #{itemSelecionado.expertise_id} (Universidade)</p>
+                  <p><strong>Demanda Originária (ID):</strong> #{itemSelecionado.demanda_id}</p>
+                  <p><strong>Expertise Vinculada (ID):</strong> #{itemSelecionado.expertise_id}</p>
                   <p><strong>Status de Execução:</strong> <span style={{color: '#388e3c', fontWeight: 'bold'}}>CONCLUÍDO E HOMOLOGADO</span></p>
                   
                   <div style={{marginTop: '20px', padding: '15px', backgroundColor: '#f5f7fa', borderRadius: '8px', marginBottom: '15px'}}>
                     <p style={{margin: '0 0 10px 0', fontWeight: 'bold'}}>Evidências Científicas Geradas:</p>
-                    <button style={styles.btnLink} onClick={() => alert('Na versão de produção, isto abriria o Repositório Institucional ou DOI do Artigo.')}>
-                      Acessar Artigo Científico / Patente (Link Externo)
+                    <button style={styles.btnLink} onClick={() => alert('Na versão de produção, isto abriria o Repositório Institucional.')}>
+                      Acessar Artigo Científico / Patente
                     </button>
                   </div>
 
                   <div style={{padding: '15px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}>
-                    <p style={{margin: '0 0 10px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}><Wallet size={16} style={{marginRight: '5px'}}/> Prestação de Contas (Open Data)</p>
+                    <p style={{margin: '0 0 10px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}><Wallet size={16} style={{marginRight: '5px'}}/> Prestação de Contas</p>
                     <table style={{width: '100%', fontSize: '13px', borderCollapse: 'collapse'}}>
                       <thead>
                         <tr style={{borderBottom: '1px solid #eee', color: '#64748b', textAlign: 'left'}}>
@@ -242,22 +242,21 @@ const PainelTransparencia = () => {
                         <tr style={{borderBottom: '1px solid #eee'}}>
                           <td style={{padding: '8px'}}>Bolsa Pesquisador Responsável</td>
                           <td style={{padding: '8px', fontWeight: 'bold'}}>R$ 4.500,00</td>
-                          <td style={{padding: '8px'}}><a href="#recibo" style={{color: '#1976d2'}}>Recibo_Assinado.pdf</a></td>
+                          <td style={{padding: '8px'}}><a href="#recibo" style={{color: '#1976d2'}}>Recibo.pdf</a></td>
                         </tr>
                         <tr style={{borderBottom: '1px solid #eee'}}>
                           <td style={{padding: '8px'}}>Equipamentos e Insumos</td>
                           <td style={{padding: '8px', fontWeight: 'bold'}}>R$ 12.350,00</td>
-                          <td style={{padding: '8px'}}><a href="#nfe" style={{color: '#1976d2'}}>Nota_Fiscal_NFe.pdf</a></td>
+                          <td style={{padding: '8px'}}><a href="#nfe" style={{color: '#1976d2'}}>Nota_Fiscal.pdf</a></td>
                         </tr>
                         <tr>
                           <td style={{padding: '8px', color: '#64748b'}}>Taxa de Administração (Fundo)</td>
                           <td style={{padding: '8px', fontWeight: 'bold'}}>R$ 842,50</td>
-                          <td style={{padding: '8px'}}><a href="#extrato" style={{color: '#1976d2'}}>Extrato_Bancario.pdf</a></td>
+                          <td style={{padding: '8px'}}><a href="#extrato" style={{color: '#1976d2'}}>Extrato.pdf</a></td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
-
                 </div>
               )}
             </div>
