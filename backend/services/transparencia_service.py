@@ -7,4 +7,6 @@ class TransparenciaService:
     def obter_painel_projetos(self):
         projetos = self.repo.get_projetos_concluidos()
         return projetos
-    
+        
+    def obter_ultimos_aportes(self):
+        return self.repo.get_ultimos_aportes()

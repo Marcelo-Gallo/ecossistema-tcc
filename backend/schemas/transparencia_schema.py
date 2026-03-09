@@ -8,3 +8,8 @@ class ProjetoConcluidoResponse(BaseModel):
     expertise_id: int
     status: str
 
+class AporteTransparenciaResponse(BaseModel):
+    codigo_transacao: str
+    doador_nome: str
+    valor: float
+    data_aporte: str

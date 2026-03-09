@@ -56,7 +56,7 @@ const PainelDoacao = () => {
               value={valor} 
               onChange={(e) => setValor(e.target.value)} 
               min="10" 
-              step="10"
+              step="0.01" 
               required
             />
 
