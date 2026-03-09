@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Lightbulb, GraduationCap, FileText, Landmark, Rocket, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Building2, Lightbulb, GraduationCap, FileText, Landmark, Rocket, CheckCircle2, AlertCircle, ShieldAlert } from 'lucide-react';
 
 const PainelCadastro = () => {
   const [atores, setAtores] = useState([]);
@@ -7,6 +7,7 @@ const PainelCadastro = () => {
   const [demandas, setDemandas] = useState([]);
   const [editais, setEditais] = useState([]);
   const [projetosGerenciamento, setProjetosGerenciamento] = useState([]);
+  const [kpisFinanceiros, setKpisFinanceiros] = useState({ teto_rendimento: 0, orcamento_empenhado: 0 });
   const [mensagem, setMensagem] = useState({ texto: '', tipo: '' });
   
   const [atorForm, setAtorForm] = useState({ nome: '', tipo_helice: 'GOVERNO' });
@@ -20,18 +21,20 @@ const PainelCadastro = () => {
 
   const carregarDados = async () => {
     try {
-      const [resAtores, resExpertises, resDemandas, resEditais, resProjetos] = await Promise.all([
+      const [resAtores, resExpertises, resDemandas, resEditais, resProjetos, resKpis] = await Promise.all([
         fetch('http://localhost:8000/api/atores/'),
         fetch('http://localhost:8000/api/expertises/'),
         fetch('http://localhost:8000/api/demandas/'),
         fetch('http://localhost:8000/api/editais/'),
-        fetch('http://localhost:8000/api/projetos/')
+        fetch('http://localhost:8000/api/projetos/'),
+        fetch('http://localhost:8000/api/transparencia/kpis')
       ]);
       setAtores(await resAtores.json());
       setExpertises(await resExpertises.json());
       setDemandas(await resDemandas.json());
       setEditais(await resEditais.json());
       setProjetosGerenciamento(await resProjetos.json());
+      setKpisFinanceiros(await resKpis.json());
     } catch (error) { console.error("Erro ao carregar dados:", error); }
   };
 
@@ -46,12 +49,7 @@ const PainelCadastro = () => {
   const submitGenerico = async (e, url, payload, resetState) => {
     e.preventDefault();
     try {
-      const res = await fetch(url, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(payload) 
-      });
-      
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (res.ok) {
         exibirMensagem('Registo efetuado com sucesso!', 'sucesso');
         resetState();
@@ -60,8 +58,11 @@ const PainelCadastro = () => {
         const err = await res.json();
         exibirMensagem(err.detail || 'Erro ao guardar os dados.', 'erro');
       }
-    } catch { exibirMensagem('Erro de conexão com o servidor.', 'erro'); }
+    } catch { exibirMensagem('Erro de conexão.', 'erro'); }
   };
+
+  // CÁLCULO DA TRAVA FISCAL DE GOVERNANÇA
+  const saldoLivreParaEditais = kpisFinanceiros.teto_rendimento - kpisFinanceiros.orcamento_empenhado;
 
   return (
     <div style={styles.container}>
@@ -150,28 +151,35 @@ const PainelCadastro = () => {
           </form>
         </div>
 
-        <div style={styles.card}>
+        {/* O CARD DE EDITAL COM A TRAVA ATIVADA */}
+        <div style={{...styles.card, border: '2px solid #0891b2'}}>
           <div style={styles.cardHeader}>
             <Landmark size={22} color="#0891b2" />
             <h3 style={styles.cardTitle}>5. Empenhar Verba (Novo Edital)</h3>
           </div>
-          <p style={{fontSize: '12px', color: '#666', marginBottom: '15px'}}>Para financiar um projeto, você deve primeiro "empacotar" parte do teto de rendimentos em um Edital público.</p>
+          
+          <div style={{ backgroundColor: saldoLivreParaEditais > 0 ? '#f0fdf4' : '#fef2f2', padding: '10px', borderRadius: '8px', marginBottom: '15px', border: `1px solid ${saldoLivreParaEditais > 0 ? '#bbf7d0' : '#fecaca'}` }}>
+             <p style={{ margin: 0, fontSize: '13px', color: saldoLivreParaEditais > 0 ? '#166534' : '#991b1b', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+               <ShieldAlert size={16} style={{marginRight: '5px'}}/>
+               Saldo de Rendimentos Livres: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(saldoLivreParaEditais)}
+             </p>
+             {saldoLivreParaEditais <= 0 && <p style={{margin: '5px 0 0 0', fontSize: '11px', color: '#991b1b'}}>Trava Fiscal Ativada: Impossível criar editais sem novos aportes.</p>}
+          </div>
+
           <form onSubmit={e => submitGenerico(e, 'http://localhost:8000/api/editais/', { ...editalForm, orcamento_disponivel: parseFloat(editalForm.orcamento_disponivel) }, () => setEditalForm({ codigo_identificacao: '', orcamento_disponivel: '', data_abertura: '', data_fechamento: '' }))} style={styles.form}>
-            <input required style={styles.input} placeholder="Código do Edital (Ex: ED-001/2026)" value={editalForm.codigo_identificacao} onChange={e => setEditalForm({ ...editalForm, codigo_identificacao: e.target.value })} />
-            <input required type="number" step="0.01" style={styles.input} placeholder="Orçamento Disponível (R$)" value={editalForm.orcamento_disponivel} onChange={e => setEditalForm({ ...editalForm, orcamento_disponivel: e.target.value })} />
+            <input required style={styles.input} placeholder="Código do Edital (Ex: ED-001/2026)" value={editalForm.codigo_identificacao} onChange={e => setEditalForm({ ...editalForm, codigo_identificacao: e.target.value })} disabled={saldoLivreParaEditais <= 0}/>
+            
+            {/* A TRAVA FÍSICA NO HTML (max) */}
+            <input required type="number" step="0.01" max={saldoLivreParaEditais} style={styles.input} placeholder="Orçamento Disponível (R$)" value={editalForm.orcamento_disponivel} onChange={e => setEditalForm({ ...editalForm, orcamento_disponivel: e.target.value })} disabled={saldoLivreParaEditais <= 0} title="Não pode ultrapassar o teto de rendimentos."/>
             
             <div style={styles.row}>
-              <div style={{flex: 1}}>
-                <label style={styles.label}>Data de Abertura</label>
-                <input required type="date" style={styles.input} value={editalForm.data_abertura} onChange={e => setEditalForm({ ...editalForm, data_abertura: e.target.value })} />
-              </div>
-              <div style={{flex: 1}}>
-                <label style={styles.label}>Data de Fechamento</label>
-                <input required type="date" style={styles.input} value={editalForm.data_fechamento} onChange={e => setEditalForm({ ...editalForm, data_fechamento: e.target.value })} />
-              </div>
+              <div style={{flex: 1}}><label style={styles.label}>Abertura</label><input required type="date" style={styles.input} value={editalForm.data_abertura} onChange={e => setEditalForm({ ...editalForm, data_abertura: e.target.value })} disabled={saldoLivreParaEditais <= 0}/></div>
+              <div style={{flex: 1}}><label style={styles.label}>Fechamento</label><input required type="date" style={styles.input} value={editalForm.data_fechamento} onChange={e => setEditalForm({ ...editalForm, data_fechamento: e.target.value })} disabled={saldoLivreParaEditais <= 0}/></div>
             </div>
             
-            <button type="submit" style={styles.buttonPrimary}>Publicar Edital</button>
+            <button type="submit" style={{...styles.buttonPrimary, backgroundColor: saldoLivreParaEditais > 0 ? '#0891b2' : '#ccc', cursor: saldoLivreParaEditais > 0 ? 'pointer' : 'not-allowed'}} disabled={saldoLivreParaEditais <= 0}>
+              Publicar Edital (Validar Custo)
+            </button>
           </form>
         </div>
 
@@ -225,9 +233,7 @@ const PainelCadastro = () => {
                   <td style={{padding: '10px 0'}}>
                     <button 
                       onClick={async () => {
-                        await fetch(`http://localhost:8000/api/projetos/${proj.id}/status`, {
-                          method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: 'CONCLUIDO'})
-                        });
+                        await fetch(`http://localhost:8000/api/projetos/${proj.id}/status`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: 'CONCLUIDO'})});
                         carregarDados();
                         exibirMensagem(`Projeto "${proj.titulo}" homologado! Verifique a aba de Transparência.`, 'sucesso');
                       }}
@@ -244,13 +250,11 @@ const PainelCadastro = () => {
             </tbody>
           </table>
         </div>
-
       </div>
     </div>
   );
 };
 
-// Estilos
 const styles = {
   container: { fontFamily: 'Inter, Arial, sans-serif' },
   header: { marginBottom: '25px' },

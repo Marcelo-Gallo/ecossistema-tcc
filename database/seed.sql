@@ -1,7 +1,3 @@
-/*
-Arquivo para popular o banco, dividido em 9 etapas:
-*/
-
 -- 1. Inserindo Atores da Tríplice Hélice
 INSERT INTO ator (nome, tipo_helice) VALUES
 ('Prefeitura Municipal de Votuporanga', 'GOVERNO'),
@@ -9,20 +5,21 @@ INSERT INTO ator (nome, tipo_helice) VALUES
 ('Indústria Moveleira Noroeste', 'INDUSTRIA'),
 ('IFSP Câmpus Votuporanga', 'UNIVERSIDADE');
 
--- 2. Inserindo Doadores
+-- 2. Inserindo Doadores (A "Fé Cívica")
 INSERT INTO doador (nome, tipo_documento, documento, tipo_doador) VALUES
 ('TechCorp Inovações', 'CNPJ', '12.345.678/0001-99', 'EMPRESA'),
 ('Maria Souza', 'CPF', '111.222.333-44', 'PESSOA_FISICA');
 
 -- 3. Inserindo Aportes Iniciais (O Fundo Patrimonial ganhando tração)
+-- Total de R$ 10.000.000,00 no Corpus. Rendimento (0.8%) = R$ 80.000,00 livres.
 INSERT INTO aporte (doador_id, valor, codigo_transacao) VALUES
-(1, 50000.00, 'TXN-INITIAL-001'),
-(2, 2500.00, 'TXN-INITIAL-002');
+(1, 9500000.00, 'TXN-INITIAL-001'),
+(2, 500000.00, 'TXN-INITIAL-002');
 
 -- 4. Inserindo o Score (Exemplo: 1 ponto de score para cada R$ 10 aportados)
 INSERT INTO score_doador (doador_id, pontuacao_total) VALUES
-(1, 5000.00),
-(2, 250.00);
+(1, 950000.00),
+(2, 50000.00);
 
 -- 5. Demandas (Problemas do Município/Indústria)
 INSERT INTO demanda (titulo, descricao, ator_id, area_cnpq) VALUES
@@ -42,11 +39,11 @@ INSERT INTO portfolio_expertise (expertise_id, tipo, titulo, ano_publicacao) VAL
 (2, 'PROJETO_EXTENSAO', 'Sistemas de cisternas de baixo custo para edifícios públicos', 2025);
 
 -- 8. Edital Fictício (A fonte pagadora)
+-- Gastando R$ 45.000,00. Sobrarão R$ 35.000,00 livres para o próximo edital.
 INSERT INTO edital (codigo_identificacao, orcamento_disponivel, data_abertura, data_fechamento) VALUES
-('EDITAL-FUNDO-001/2025', 100000.00, '2025-01-01', '2025-12-31');
+('EDITAL-FUNDO-001/2026', 45000.00, '2026-01-01', '2026-12-31');
 
 -- 9. Projetos Concluídos (O ACERVO MUNICIPAL MOCKADO PARA A TRANSPARÊNCIA)
--- É isso aqui que o Painel de Transparência vai puxar para provar o impacto gerado
 INSERT INTO projeto_inovacao (titulo, demanda_id, expertise_id, edital_id, status) VALUES
 ('Implantação de Semáforos Inteligentes no Centro', 1, 1, 1, 'CONCLUIDO'),
 ('Cisternas Sustentáveis na Escola Municipal', 2, 2, 1, 'CONCLUIDO');

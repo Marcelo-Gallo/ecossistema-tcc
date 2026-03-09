@@ -1,27 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { BrainCircuit, Search, Info, ShieldCheck, AlertCircle } from 'lucide-react';
+import { BrainCircuit, Search, Info, ShieldCheck, AlertCircle, FileText } from 'lucide-react';
 
 const MatchmakingDashboard = () => {
   const [demandaId, setDemandaId] = useState('');
   const [demandasDisponiveis, setDemandasDisponiveis] = useState([]);
+  const [acervoPesquisadores, setAcervoPesquisadores] = useState([]);
   const [resultados, setResultados] = useState([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
-    const carregarDemandas = async () => {
+    const carregarDadosBase = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/demandas/');
-        if (response.ok) {
-          const data = await response.json();
-          setDemandasDisponiveis(data);
+        const [resDemandas, resPortfolios, resExpertises] = await Promise.all([
+          fetch('http://localhost:8000/api/demandas/'),
+          fetch('http://localhost:8000/api/portfolios/'),
+          fetch('http://localhost:8000/api/expertises/')
+        ]);
+        
+        if (resDemandas.ok) setDemandasDisponiveis(await resDemandas.json());
+        
+        // Mapeia o portfólio para amarrar o nome do pesquisador aos seus trabalhos
+        if (resPortfolios.ok && resExpertises.ok) {
+           const portfolios = await resPortfolios.json();
+           const expertises = await resExpertises.json();
+           
+           const acervoMapeado = portfolios.map(port => {
+              const exp = expertises.find(e => e.id === port.expertise_id);
+              return { ...port, pesquisador: exp ? exp.pesquisador_responsavel : 'Desconhecido' };
+           });
+           setAcervoPesquisadores(acervoMapeado);
         }
-      } catch (error) {
-        console.error("Erro ao carregar demandas:", error);
-      }
+      } catch (error) { console.error("Erro ao carregar dados:", error); }
     };
-    carregarDemandas();
+    carregarDadosBase();
   }, []);
 
   const buscarMatches = async (e) => {
@@ -34,9 +47,7 @@ const MatchmakingDashboard = () => {
     try {
       const response = await fetch(`http://localhost:8000/api/matchmaking/${demandaId}`);
       if (!response.ok) throw new Error('Não foi possível encontrar a demanda ou ocorreu um erro no servidor.');
-      
-      const data = await response.json();
-      setResultados(data);
+      setResultados(await response.json());
     } catch (err) {
       setErro(err.message);
       setResultados([]);
@@ -62,27 +73,18 @@ const MatchmakingDashboard = () => {
           <BrainCircuit size={32} color="#e11d48" />
           <div>
             <h2 style={styles.title}>Motor de Inteligência e Matchmaking</h2>
-            <p style={styles.subtitle}>Auditoria algorítmica de aderência entre Demandas Municipais e Expertises Académicas (TF-IDF).</p>
+            <p style={styles.subtitle}>Auditoria algorítmica de aderência entre Demandas Municipais e Expertises Académicas.</p>
           </div>
         </div>
       </header>
 
       <div style={styles.searchBox}>
         <form onSubmit={buscarMatches} style={styles.form}>
-          <label style={styles.label}>Selecione a Demanda para análise:</label>
+          <label style={styles.label}>Selecione a Demanda para análise vetorial (TF-IDF):</label>
           <div style={styles.inputGroup}>
-            <select
-              value={demandaId}
-              onChange={(e) => setDemandaId(e.target.value)}
-              style={styles.input}
-              required
-            >
+            <select value={demandaId} onChange={(e) => setDemandaId(e.target.value)} style={styles.input} required>
               <option value="">Selecione um problema mapeado na base...</option>
-              {demandasDisponiveis.map(d => (
-                <option key={d.id} value={d.id}>
-                  {d.titulo} - Área: {d.area_cnpq.replace(/_/g, ' ')}
-                </option>
-              ))}
+              {demandasDisponiveis.map(d => <option key={d.id} value={d.id}>{d.titulo} - Área: {d.area_cnpq.replace(/_/g, ' ')}</option>)}
             </select>
             <button type="submit" style={styles.buttonPrimary} disabled={loading || !demandaId}>
               <Search size={18} />
@@ -92,12 +94,7 @@ const MatchmakingDashboard = () => {
         </form>
       </div>
 
-      {erro && (
-        <div style={styles.alertaErro}>
-          <AlertCircle size={20} />
-          <span>{erro}</span>
-        </div>
-      )}
+      {erro && <div style={styles.alertaErro}><AlertCircle size={20} /><span>{erro}</span></div>}
 
       <div style={styles.resultadosContainer}>
         {resultados.length === 0 && !loading && !erro && (
@@ -115,7 +112,7 @@ const MatchmakingDashboard = () => {
                 <p style={styles.area}>{match.area_conhecimento}</p>
               </div>
               <div style={styles.scoreBadge}>
-                <span style={{ fontSize: '12px', opacity: 0.9 }}>Score de Match</span>
+                <span style={{ fontSize: '12px', opacity: 0.9 }}>Score de Match Final</span>
                 <span style={{ fontSize: '24px', fontWeight: 'bold' }}>{match.score_total}%</span>
               </div>
             </div>
@@ -137,28 +134,38 @@ const MatchmakingDashboard = () => {
               </div>
 
               <div style={styles.auditoriaContainer}>
-                <h4 style={styles.sectionTitle}><ShieldCheck size={18} style={{ marginRight: '8px' }}/> Justificação Algorítmica (Answerability)</h4>
+                <h4 style={styles.sectionTitle}><ShieldCheck size={18} style={{ marginRight: '8px' }}/> Auditoria Algorítmica (Open Box)</h4>
                 
+                <div style={styles.formulaBox}>
+                  <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase' }}>Equação de Financiamento:</p>
+                  <code style={{ fontSize: '13px', color: '#be123c', backgroundColor: '#fff1f2', padding: '6px 10px', borderRadius: '4px', display: 'block', marginBottom: '8px' }}>
+                    Score = (Texto TF-IDF × 0.70) + (Autoridade × 0.30)
+                  </code>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#334155' }}>
+                    {match.score_total}% = ({match.detalhes.score_texto} × 0.7) + ({match.detalhes.score_autoridade} × 0.3)
+                  </p>
+                </div>
+
                 <div style={styles.justificativaBox}>
                   <p style={{ margin: '0 0 10px 0', fontSize: '14px', lineHeight: '1.6', color: '#334155', fontWeight: '600' }}>
-                    Por que este Match foi recomendado para financiamento público?
+                    Evidências Científicas Identificadas na Base:
                   </p>
                   <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
-                    <li style={{ marginBottom: '8px' }}>
-                      <strong>Filtro Hard (CNPq):</strong> O pesquisador pertence à mesma grande área exigida pela demanda governamental, eliminando riscos de desvio de escopo.
-                    </li>
-                    <li style={{ marginBottom: '8px' }}>
-                      <strong>Alinhamento Semântico ({match.detalhes.score_texto}%):</strong> A análise de similaridade por cossenos (TF-IDF) identificou alta correlação entre o vocabulário do problema descrito e o banco de currículos da universidade.
-                    </li>
-                    <li>
-                      <strong>Mitigação de Risco ({match.detalhes.score_autoridade}%):</strong> O pesquisador não é um iniciante no tema. Ele possui <strong>{match.detalhes.total_publicacoes} documento(s) científico(s)</strong> já validados e publicados nesta área de especialidade, garantindo a viabilidade técnica da inovação.
-                    </li>
+                    {acervoPesquisadores.filter(p => p.pesquisador === match.pesquisador_responsavel).map((trab, idx) => (
+                      <li key={idx} style={{ marginBottom: '8px' }}>
+                         <FileText size={12} style={{display: 'inline', marginRight: '4px', color: '#e11d48'}}/>
+                         <strong>{trab.tipo.replace('_', ' ')}:</strong> {trab.titulo} ({trab.ano_publicacao})
+                      </li>
+                    ))}
+                    {acervoPesquisadores.filter(p => p.pesquisador === match.pesquisador_responsavel).length === 0 && (
+                      <li>Pesquisador inferido por similaridade de área de atuação, sem portfólio explícito cadastrado.</li>
+                    )}
                   </ul>
                 </div>
 
                 <div style={styles.acaoContainer}>
-                   <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', margin: '0 0 10px 0' }}>
-                     Este nível de transparência permite justificar a injeção de fundos patrimoniais e construir a confiança cívica.
+                   <p style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', margin: '0' }}>
+                     * Abertura da "Caixa Preta" algorítmica para garantir a Explicabilidade (Answerability) exigida pela Governança Pública.
                    </p>
                 </div>
               </div>
@@ -193,6 +200,7 @@ const styles = {
   sectionTitle: { display: 'flex', alignItems: 'center', margin: '0 0 15px 0', fontSize: '15px', color: '#0f172a', fontWeight: '600', textTransform: 'uppercase' },
   radarContainer: { borderRight: '1px solid #f1f5f9', paddingRight: '20px' },
   auditoriaContainer: { display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' },
+  formulaBox: { backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '15px', marginBottom: '15px' },
   justificativaBox: { backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '15px', marginBottom: '20px' },
   acaoContainer: { marginTop: 'auto', paddingTop: '15px', borderTop: '1px dashed #e2e8f0' }
 };
