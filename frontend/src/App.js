@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Database, Zap, PieChart } from 'lucide-react'; // Ícones modernos
+import { Database, Zap, PieChart, Heart } from 'lucide-react'; 
 import MatchmakingDashboard from './components/MatchmakingDashboard';
 import PainelCadastro from './components/PainelCadastro';
 import PainelTransparencia from './components/PainelTransparencia';
+import PainelDoacao from './components/PainelDoacao';
 
 function App() {
-  const [abaAtiva, setAbaAtiva] = useState('transparencia'); // Iniciando na transparência para o TCC
+  const [abaAtiva, setAbaAtiva] = useState('transparencia'); 
 
   return (
     <div style={{ backgroundColor: '#f0f2f5', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* Navbar */}
       <nav style={styles.navbar}>
         <div style={styles.logoContainer}>
           <div style={styles.logoIcon}></div>
@@ -21,6 +21,11 @@ function App() {
           <button style={abaAtiva === 'transparencia' ? styles.btnAtivo : styles.btnNav} onClick={() => setAbaAtiva('transparencia')}>
             <PieChart size={18} style={{ marginRight: '8px' }} /> Transparência Ativa
           </button>
+          
+          <button style={abaAtiva === 'doacao' ? styles.btnAtivo : styles.btnNav} onClick={() => setAbaAtiva('doacao')}>
+            <Heart size={18} style={{ marginRight: '8px' }} /> Fazer Aporte
+          </button>
+
           <button style={abaAtiva === 'cadastro' ? styles.btnAtivo : styles.btnNav} onClick={() => setAbaAtiva('cadastro')}>
             <Database size={18} style={{ marginRight: '8px' }} /> Alimentar Dados
           </button>
@@ -30,9 +35,9 @@ function App() {
         </div>
       </nav>
 
-      {/* Área de Conteúdo */}
       <main style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         {abaAtiva === 'transparencia' && <PainelTransparencia />}
+        {abaAtiva === 'doacao' && <PainelDoacao />}
         {abaAtiva === 'cadastro' && <PainelCadastro />}
         {abaAtiva === 'dashboard' && <MatchmakingDashboard />}
       </main>

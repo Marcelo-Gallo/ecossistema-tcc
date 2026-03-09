@@ -10,6 +10,8 @@ from routers import projeto_router
 from routers import membro_router
 from routers import pagamento_router
 from routers import matchmaking_router
+from routers import transparencia_router
+from routers import doacao_router
 
 app = FastAPI(
     title="Portal da Governança - Fundo Patrimonial",
@@ -34,6 +36,8 @@ app.include_router(projeto_router.router)
 app.include_router(membro_router.router)
 app.include_router(pagamento_router.router)
 app.include_router(matchmaking_router.router)
+app.include_router(transparencia_router.router)
+app.include_router(doacao_router.router)
 
 
 @app.get("/")

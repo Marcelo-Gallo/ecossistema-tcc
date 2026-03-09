@@ -1,26 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Wallet, Target, Users, BookOpen } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { Wallet, Target, Users, BookOpen, Award } from 'lucide-react';
 
 const PainelTransparencia = () => {
   const [kpis, setKpis] = useState({ orcamentoTotal: 0, projetosAtivos: 0, totalDemandas: 0 });
   const [dadosAreas, setDadosAreas] = useState([]);
+  const [projetosConcluidos, setProjetosConcluidos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const CORES = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57'];
+  const CORES = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
   useEffect(() => {
     const carregarDadosGovernanca = async () => {
       try {
-        const [resEditais, resProjetos, resDemandas] = await Promise.all([
+        const [resEditais, resProjetos, resDemandas, resAcervo] = await Promise.all([
           fetch('http://localhost:8000/api/editais/'),
           fetch('http://localhost:8000/api/projetos/'),
-          fetch('http://localhost:8000/api/demandas/')
+          fetch('http://localhost:8000/api/demandas/'),
+          fetch('http://localhost:8000/api/transparencia/projetos-concluidos')
         ]);
 
         const editais = await resEditais.json();
         const projetos = await resProjetos.json();
         const demandas = await resDemandas.json();
+        const acervo = await resAcervo.json();
+
         const orcamentoTotal = editais.reduce((acc, edital) => acc + parseFloat(edital.orcamento_disponivel), 0);
         
         setKpis({
@@ -28,6 +32,8 @@ const PainelTransparencia = () => {
           projetosAtivos: projetos.length,
           totalDemandas: demandas.length
         });
+
+        setProjetosConcluidos(acervo);
 
         const contagemAreas = demandas.reduce((acc, demanda) => {
           acc[demanda.area_cnpq] = (acc[demanda.area_cnpq] || 0) + 1;
@@ -54,20 +60,12 @@ const PainelTransparencia = () => {
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '50px' }}>Carregando métricas de governança...</div>;
   }
-  const dadosFinanceiros = [
-    { mes: 'Jan', orcamento: 4000, executado: 2400 },
-    { mes: 'Fev', orcamento: 3000, executado: 1398 },
-    { mes: 'Mar', orcamento: 2000, executado: 4800 },
-    { mes: 'Abr', orcamento: 2780, executado: 3908 },
-    { mes: 'Mai', orcamento: 1890, executado: 4800 },
-    { mes: 'Jun', orcamento: 2390, executado: 3800 },
-  ];
 
   return (
     <div style={styles.container}>
       <header style={styles.header}>
         <h2 style={styles.title}>Painel de Transparência Ativa</h2>
-        <p style={styles.subtitle}>Acompanhe em tempo real a destinação e o impacto do Fundo Patrimonial Municipal.</p>
+        <p style={styles.subtitle}>Acompanhe a destinação do Fundo Patrimonial e o impacto gerado na sociedade.</p>
       </header>
 
       <div style={styles.gridKpi}>
@@ -84,7 +82,7 @@ const PainelTransparencia = () => {
         <div style={styles.cardKpi}>
           <div style={styles.iconContainer}><Target size={24} color="#388e3c" /></div>
           <div>
-            <p style={styles.kpiLabel}>Projetos Financiados</p>
+            <p style={styles.kpiLabel}>Projetos Ativos</p>
             <h3 style={styles.kpiValue}>{kpis.projetosAtivos}</h3>
           </div>
         </div>
@@ -120,23 +118,29 @@ const PainelTransparencia = () => {
           )}
         </div>
 
+        {/* O Acervo Municipal vindo da Base de Dados */}
         <div style={styles.cardGrafico}>
-          <h4 style={styles.graficoTitle}>Execução do Fundo Patrimonial (Simulado)</h4>
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <BarChart data={dadosFinanceiros} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="mes" />
-                <YAxis />
-                <RechartsTooltip formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} />
-                <Legend />
-                <Bar dataKey="orcamento" name="Orçamento Disponível" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="executado" name="Valor Executado (Bolsas)" fill="#82ca9d" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <h4 style={styles.graficoTitle}>Acervo Municipal (Impacto Social Gerado)</h4>
+          <p style={{fontSize: '14px', color: '#666', marginBottom: '15px'}}>Soluções tecnológicas já implantadas com sucesso no município.</p>
+          
+          {projetosConcluidos.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {projetosConcluidos.map((proj) => (
+                <div key={proj.id} style={styles.acervoCard}>
+                  <div style={styles.acervoIcon}><Award size={20} color="#388e3c" /></div>
+                  <div>
+                    <h5 style={{margin: '0 0 5px 0', fontSize: '15px', color: '#333'}}>{proj.titulo}</h5>
+                    <p style={{margin: 0, fontSize: '13px', color: '#888'}}>
+                      Status: <strong style={{color: '#388e3c'}}>CONCLUÍDO</strong>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={styles.emptyState}>Nenhum projeto finalizado ainda.</p>
+          )}
         </div>
-
       </div>
     </div>
   );
@@ -156,8 +160,11 @@ const styles = {
 
   gridGraficos: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' },
   cardGrafico: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #eaeaea' },
-  graficoTitle: { margin: '0 0 20px 0', fontSize: '16px', color: '#333', fontWeight: '600' },
-  emptyState: { textAlign: 'center', color: '#888', marginTop: '50px', fontStyle: 'italic' }
+  graficoTitle: { margin: '0 0 10px 0', fontSize: '16px', color: '#333', fontWeight: '600' },
+  emptyState: { textAlign: 'center', color: '#888', marginTop: '50px', fontStyle: 'italic' },
+  
+  acervoCard: { display: 'flex', alignItems: 'center', padding: '15px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #eee' },
+  acervoIcon: { backgroundColor: '#e8f5e9', padding: '10px', borderRadius: '50%', marginRight: '15px', display: 'flex' }
 };
 
 export default PainelTransparencia;

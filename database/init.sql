@@ -103,3 +103,40 @@ CREATE TABLE pagamento_bolsa (
     deletado_em TIMESTAMP DEFAULT NULL, 
     FOREIGN KEY (membro_id) REFERENCES membro_projeto(id) ON DELETE RESTRICT
 );
+
+-- Tabela de Doadores (Atores financiadores do Fundo Patrimonial)
+CREATE TABLE doador (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    tipo_documento VARCHAR(20) NOT NULL CHECK (tipo_documento IN ('CPF', 'CNPJ')),
+    documento VARCHAR(20) UNIQUE NOT NULL,
+    tipo_doador VARCHAR(50) NOT NULL CHECK (tipo_doador IN ('PESSOA_FISICA', 'EMPRESA')),
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deletado_em TIMESTAMP DEFAULT NULL
+);
+
+-- Tabela de Aportes (Registra a injeção de recursos no Fundo)
+CREATE TABLE aporte (
+    id SERIAL PRIMARY KEY,
+    doador_id INTEGER NOT NULL,
+    valor NUMERIC(15, 2) NOT NULL,
+    data_aporte TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'CONCLUIDO',
+    codigo_transacao VARCHAR(100) UNIQUE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deletado_em TIMESTAMP DEFAULT NULL,
+    FOREIGN KEY (doador_id) REFERENCES doador(id) ON DELETE RESTRICT
+);
+
+-- Tabela de Score do Doador (O "Incentivo de Confiança")
+CREATE TABLE score_doador (
+    id SERIAL PRIMARY KEY,
+    doador_id INTEGER UNIQUE NOT NULL,
+    pontuacao_total NUMERIC(15, 2) DEFAULT 0.00,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deletado_em TIMESTAMP DEFAULT NULL,
+    FOREIGN KEY (doador_id) REFERENCES doador(id) ON DELETE CASCADE
+);
