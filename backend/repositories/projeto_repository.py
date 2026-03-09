@@ -33,6 +33,13 @@ class ProjetoRepository:
             cursor.execute("SELECT * FROM projeto_inovacao WHERE id = %s AND deletado_em IS NULL;", (projeto_id,))
             return cursor.fetchone()
 
+    def atualizar_status(self, projeto_id: int, novo_status: str):
+        query = "UPDATE projeto_inovacao SET status = %s WHERE id = %s RETURNING id, titulo, status"
+        with self.conn.cursor() as cursor:
+            cursor.execute(query, (novo_status, projeto_id))
+            self.conn.commit()
+            return cursor.fetchone()
+
     def soft_delete(self, projeto_id: int):
         with self.conn.cursor() as cursor:
             cursor.execute(

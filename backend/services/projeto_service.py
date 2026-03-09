@@ -32,6 +32,9 @@ class ProjetoService:
     def listar_projetos(self):
         return self.projeto_repo.get_all_active()
 
+    def alterar_status_projeto(self, projeto_id: int, novo_status: str):
+        return self.projeto_repo.atualizar_status(projeto_id, novo_status)
+
     def deletar_projeto(self, projeto_id: int):
         projeto = self.projeto_repo.get_by_id(projeto_id)
         if not projeto:

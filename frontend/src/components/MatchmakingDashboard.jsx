@@ -9,7 +9,6 @@ const MatchmakingDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
 
-  // Busca as demandas automaticamente ao abrir a tela
   useEffect(() => {
     const carregarDemandas = async () => {
       try {
@@ -139,19 +138,24 @@ const MatchmakingDashboard = () => {
 
               <div style={styles.auditoriaContainer}>
                 <h4 style={styles.sectionTitle}><ShieldCheck size={18} style={{ marginRight: '8px' }}/> Justificação Algorítmica (Answerability)</h4>
+                
                 <div style={styles.justificativaBox}>
-                  <p style={{ margin: '0 0 10px 0', fontSize: '14px', lineHeight: '1.6', color: '#334155' }}>
-                    O sistema recomenda este financiamento com base em duas métricas comprováveis:
+                  <p style={{ margin: '0 0 10px 0', fontSize: '14px', lineHeight: '1.6', color: '#334155', fontWeight: '600' }}>
+                    Por que este Match foi recomendado para financiamento público?
                   </p>
                   <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#475569', lineHeight: '1.6' }}>
                     <li style={{ marginBottom: '8px' }}>
-                      <strong>Alinhamento Semântico ({match.detalhes.score_texto}%):</strong> O algoritmo de Processamento de Linguagem Natural encontrou alta intersecção vetorial entre o problema descrito pelo município e os resumos de publicações deste investigador.
+                      <strong>Filtro Hard (CNPq):</strong> O pesquisador pertence à mesma grande área exigida pela demanda governamental, eliminando riscos de desvio de escopo.
+                    </li>
+                    <li style={{ marginBottom: '8px' }}>
+                      <strong>Alinhamento Semântico ({match.detalhes.score_texto}%):</strong> A análise de similaridade por cossenos (TF-IDF) identificou alta correlação entre o vocabulário do problema descrito e o banco de currículos da universidade.
                     </li>
                     <li>
-                      <strong>Autoridade Científica ({match.detalhes.score_autoridade}%):</strong> O investigador possui <strong>{match.detalhes.total_publicacoes} registo(s)</strong> validados no seu portfólio na mesma grande área do CNPq exigida, mitigando o risco de execução do projeto.
+                      <strong>Mitigação de Risco ({match.detalhes.score_autoridade}%):</strong> O pesquisador não é um iniciante no tema. Ele possui <strong>{match.detalhes.total_publicacoes} documento(s) científico(s)</strong> já validados e publicados nesta área de especialidade, garantindo a viabilidade técnica da inovação.
                     </li>
                   </ul>
                 </div>
+
                 <div style={styles.acaoContainer}>
                    <p style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', margin: '0 0 10px 0' }}>
                      Este nível de transparência permite justificar a injeção de fundos patrimoniais e construir a confiança cívica.
@@ -166,7 +170,6 @@ const MatchmakingDashboard = () => {
   );
 };
 
-// Estilos
 const styles = {
   container: { fontFamily: 'Inter, Arial, sans-serif' },
   header: { marginBottom: '25px', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' },

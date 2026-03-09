@@ -22,23 +22,24 @@ const PainelTransparencia = () => {
   useEffect(() => {
     const carregarDadosGovernanca = async () => {
       try {
-        const [resEditais, resProjetos, resDemandas, resAcervo, resAportes] = await Promise.all([
-          fetch('http://localhost:8000/api/editais/'),
+        const [resProjetos, resDemandas, resAcervo, resAportes] = await Promise.all([
           fetch('http://localhost:8000/api/projetos/'),
           fetch('http://localhost:8000/api/demandas/'),
           fetch('http://localhost:8000/api/transparencia/projetos-concluidos'),
           fetch('http://localhost:8000/api/transparencia/aportes')
         ]);
 
-        const dataEditais = await resEditais.json();
         const dataProjetos = await resProjetos.json();
         const dataDemandas = await resDemandas.json();
         const dataAcervo = await resAcervo.json();
         const dataAportes = await resAportes.json();
 
-        const orcamentoTotal = dataEditais.reduce((acc, edital) => acc + parseFloat(edital.orcamento_disponivel), 0);
+        // CÁLCULO DINÂMICO DOS RENDIMENTOS (0.8% DO CORPUS)
+        const corpusTotal = dataAportes.reduce((acc, aporte) => acc + parseFloat(aporte.valor), 0);
+        const rendimentoDisponivel = corpusTotal * 0.008; 
         
-        setKpis({ orcamentoTotal });
+        setKpis({ orcamentoTotal: rendimentoDisponivel });
+        
         setDemandas(dataDemandas);
         setProjetosAtivos(dataProjetos.filter(p => p.status !== 'CONCLUIDO'));
         setProjetosConcluidos(dataAcervo);
@@ -83,7 +84,7 @@ const PainelTransparencia = () => {
         <div style={styles.cardKpi}>
           <div style={styles.iconContainer}><Wallet size={24} color="#1976d2" /></div>
           <div>
-            <p style={styles.kpiLabel}>Rendimentos Liberados (Editais)</p>
+            <p style={styles.kpiLabel}>Rendimentos Liberados (0.8% a.m.)</p>
             <h3 style={styles.kpiValue}>
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(kpis.orcamentoTotal)}
             </h3>
@@ -165,7 +166,7 @@ const PainelTransparencia = () => {
                 <div style={styles.acervoIcon}><Award size={20} color="#388e3c" /></div>
                 <div>
                   <h5 style={{margin: '0 0 5px 0', fontSize: '14px', color: '#333'}}>{proj.titulo}</h5>
-                  <p style={{margin: 0, fontSize: '12px', color: '#388e3c', fontWeight: 'bold'}}>VER DETALHES E ARTIGOS</p>
+                  <p style={{margin: 0, fontSize: '12px', color: '#388e3c', fontWeight: 'bold'}}>VER DETALHES E PRESTAÇÃO</p>
                 </div>
               </div>
             ))}
@@ -182,7 +183,7 @@ const PainelTransparencia = () => {
               <h3 style={{margin: 0}}>
                 {modalAtivo === 'demandas' && 'Demandas da Tríplice Hélice'}
                 {modalAtivo === 'projetos' && 'Projetos de Inovação Ativos'}
-                {modalAtivo === 'acervo_detalhe' && 'Auditoria de Impacto Científico'}
+                {modalAtivo === 'acervo_detalhe' && 'Auditoria de Impacto e Gastos'}
               </h3>
               <button style={styles.closeBtn} onClick={() => setModalAtivo(null)}><X size={20}/></button>
             </div>
@@ -220,12 +221,43 @@ const PainelTransparencia = () => {
                   <p><strong>Expertise Vinculada (ID):</strong> #{itemSelecionado.expertise_id} (Universidade)</p>
                   <p><strong>Status de Execução:</strong> <span style={{color: '#388e3c', fontWeight: 'bold'}}>CONCLUÍDO E HOMOLOGADO</span></p>
                   
-                  <div style={{marginTop: '20px', padding: '15px', backgroundColor: '#f5f7fa', borderRadius: '8px'}}>
+                  <div style={{marginTop: '20px', padding: '15px', backgroundColor: '#f5f7fa', borderRadius: '8px', marginBottom: '15px'}}>
                     <p style={{margin: '0 0 10px 0', fontWeight: 'bold'}}>Evidências Científicas Geradas:</p>
                     <button style={styles.btnLink} onClick={() => alert('Na versão de produção, isto abriria o Repositório Institucional ou DOI do Artigo.')}>
                       Acessar Artigo Científico / Patente (Link Externo)
                     </button>
                   </div>
+
+                  <div style={{padding: '15px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}>
+                    <p style={{margin: '0 0 10px 0', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}><Wallet size={16} style={{marginRight: '5px'}}/> Prestação de Contas (Open Data)</p>
+                    <table style={{width: '100%', fontSize: '13px', borderCollapse: 'collapse'}}>
+                      <thead>
+                        <tr style={{borderBottom: '1px solid #eee', color: '#64748b', textAlign: 'left'}}>
+                          <th style={{padding: '8px'}}>Rubrica</th>
+                          <th style={{padding: '8px'}}>Valor Executado</th>
+                          <th style={{padding: '8px'}}>Comprovante</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr style={{borderBottom: '1px solid #eee'}}>
+                          <td style={{padding: '8px'}}>Bolsa Pesquisador Responsável</td>
+                          <td style={{padding: '8px', fontWeight: 'bold'}}>R$ 4.500,00</td>
+                          <td style={{padding: '8px'}}><a href="#recibo" style={{color: '#1976d2'}}>Recibo_Assinado.pdf</a></td>
+                        </tr>
+                        <tr style={{borderBottom: '1px solid #eee'}}>
+                          <td style={{padding: '8px'}}>Equipamentos e Insumos</td>
+                          <td style={{padding: '8px', fontWeight: 'bold'}}>R$ 12.350,00</td>
+                          <td style={{padding: '8px'}}><a href="#nfe" style={{color: '#1976d2'}}>Nota_Fiscal_NFe.pdf</a></td>
+                        </tr>
+                        <tr>
+                          <td style={{padding: '8px', color: '#64748b'}}>Taxa de Administração (Fundo)</td>
+                          <td style={{padding: '8px', fontWeight: 'bold'}}>R$ 842,50</td>
+                          <td style={{padding: '8px'}}><a href="#extrato" style={{color: '#1976d2'}}>Extrato_Bancario.pdf</a></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
                 </div>
               )}
             </div>

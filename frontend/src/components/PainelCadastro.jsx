@@ -6,7 +6,9 @@ const PainelCadastro = () => {
   const [expertises, setExpertises] = useState([]);
   const [demandas, setDemandas] = useState([]);
   const [editais, setEditais] = useState([]);
+  const [projetosGerenciamento, setProjetosGerenciamento] = useState([]);
   const [mensagem, setMensagem] = useState({ texto: '', tipo: '' });
+  
   const [atorForm, setAtorForm] = useState({ nome: '', tipo_helice: 'GOVERNO' });
   const [demandaForm, setDemandaForm] = useState({ titulo: '', descricao: '', ator_id: '', area_cnpq: 'ENGENHARIAS' });
   const [expertiseForm, setExpertiseForm] = useState({ pesquisador_responsavel: '', area_conhecimento: '', area_cnpq: 'ENGENHARIAS', ator_id: '', link_lattes: '' });
@@ -18,16 +20,18 @@ const PainelCadastro = () => {
 
   const carregarDados = async () => {
     try {
-      const [resAtores, resExpertises, resDemandas, resEditais] = await Promise.all([
+      const [resAtores, resExpertises, resDemandas, resEditais, resProjetos] = await Promise.all([
         fetch('http://localhost:8000/api/atores/'),
         fetch('http://localhost:8000/api/expertises/'),
         fetch('http://localhost:8000/api/demandas/'),
-        fetch('http://localhost:8000/api/editais/')
+        fetch('http://localhost:8000/api/editais/'),
+        fetch('http://localhost:8000/api/projetos/')
       ]);
       setAtores(await resAtores.json());
       setExpertises(await resExpertises.json());
       setDemandas(await resDemandas.json());
       setEditais(await resEditais.json());
+      setProjetosGerenciamento(await resProjetos.json());
     } catch (error) { console.error("Erro ao carregar dados:", error); }
   };
 
@@ -51,7 +55,7 @@ const PainelCadastro = () => {
       if (res.ok) {
         exibirMensagem('Registo efetuado com sucesso!', 'sucesso');
         resetState();
-        carregarDados(); // Atualiza as listas dropdown
+        carregarDados(); 
       } else {
         const err = await res.json();
         exibirMensagem(err.detail || 'Erro ao guardar os dados.', 'erro');
@@ -195,6 +199,50 @@ const PainelCadastro = () => {
 
             <button type="submit" style={{...styles.buttonPrimary, backgroundColor: '#e11d48'}}>Aprovar Projeto</button>
           </form>
+        </div>
+
+        {/* NOVO CARD: GESTÃO AO VIVO PARA A BANCA */}
+        <div style={{...styles.card, gridColumn: '1 / -1', border: '2px dashed #2563eb'}}>
+          <div style={styles.cardHeader}>
+            <CheckCircle2 size={22} color="#2563eb" />
+            <h3 style={styles.cardTitle}>7. Painel de Controle (PoC Ao Vivo)</h3>
+          </div>
+          <p style={{fontSize: '13px', color: '#666', marginBottom: '15px'}}>Simule a execução de um projeto para auditar a atualização em tempo real no Painel de Transparência.</p>
+          
+          <table style={{width: '100%', borderCollapse: 'collapse'}}>
+            <thead>
+              <tr style={{textAlign: 'left', borderBottom: '1px solid #eee', fontSize: '13px', color: '#666'}}>
+                <th style={{padding: '10px 0'}}>Projeto</th>
+                <th style={{padding: '10px 0'}}>Status Atual</th>
+                <th style={{padding: '10px 0'}}>Ação Simulada</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projetosGerenciamento.filter(p => p.status !== 'CONCLUIDO').map(proj => (
+                <tr key={proj.id} style={{borderBottom: '1px solid #eee'}}>
+                  <td style={{padding: '10px 0', fontSize: '14px', fontWeight: '500'}}>{proj.titulo}</td>
+                  <td style={{padding: '10px 0', fontSize: '12px'}}><span style={{backgroundColor: '#fef3c7', color: '#d97706', padding: '4px 8px', borderRadius: '4px'}}>{proj.status}</span></td>
+                  <td style={{padding: '10px 0'}}>
+                    <button 
+                      onClick={async () => {
+                        await fetch(`http://localhost:8000/api/projetos/${proj.id}/status`, {
+                          method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: 'CONCLUIDO'})
+                        });
+                        carregarDados();
+                        exibirMensagem(`Projeto "${proj.titulo}" homologado! Verifique a aba de Transparência.`, 'sucesso');
+                      }}
+                      style={{padding: '6px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'}}
+                    >
+                      Homologar Conclusão
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {projetosGerenciamento.filter(p => p.status !== 'CONCLUIDO').length === 0 && (
+                <tr><td colSpan="3" style={{textAlign: 'center', padding: '20px', color: '#888'}}>Nenhum projeto ativo para homologar.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
       </div>
